@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blockchain DApp</title>
+  <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js/dist/web3.min.js"></script>
+</head>
+
+<body>
+  <h1>Blockchain DApp with MetaMask</h1>
+
+  <!-- Nút Connect Wallet -->
+  <button id="connectWalletButton"
+    style="width: 10%; padding: 12px ;background-color: #0d71f4; color: white; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s ease;">Connect
+    Wallet</button>
+  <span id="walletAddress"></span>
+  <br>
+
+  <!-- Nút Add User và form Add User, User List -->
+  <button id="addUserButton"
+    style="display: none; background-color: #4CAF50; color: white; border: none; padding: 10px 20px; font-size: 16px; cursor: pointer; border-radius: 5px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); transition: background-color 0.3s, box-shadow 0.3s;">
+    Add User
+  </button>
+
+  <div id="userList" style="display: none;">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Age</th>
+          <th>Address</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="userListContainer"></tbody>
+    </table>
+  </div>
+
+  <!-- Các trường nhập thông tin người dùng, ẩn ban đầu -->
+
+  <!-- Form Add User, ban đầu ẩn -->
+  <div id="addUserForm"
+    style="display: none; width: 100%; max-width: 400px; background-color: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);">
+    <h3 style="text-align: center; margin-bottom: 20px;">Add New User</h3>
+    <div style="margin-bottom: 15px;">
+      <label for="name" style="font-weight: bold; display: block;">Name:</label>
+      <input type="text" id="name" placeholder="Enter Name" required
+        style="width: 100%; padding: 10px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; font-size: 16px;">
+    </div>
+    <div style="margin-bottom: 15px;">
+      <label for="age" style="font-weight: bold; display: block;">Age:</label>
+      <input type="number" id="age" placeholder="Enter Age" required
+        style="width: 100%; padding: 10px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; font-size: 16px;">
+    </div>
+    <div style="margin-bottom: 15px;">
+      <label for="address" style="font-weight: bold; display: block;">Address:</label>
+      <input type="text" id="address" placeholder="Enter Address" required
+        style="width: 100%; padding: 10px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; font-size: 16px;">
+    </div>
+    <button id="saveUserButton"
+      style="width: 30%; padding: 12px ;background-color: #4CAF50; color: white; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s ease;">Save
+      User</button>
+  </div>
+
+  <script>
+    // Lắng nghe sự kiện nhấn nút "Add User"
+    document.getElementById('addUserButton').addEventListener('click', function () {
+      // Hiển thị form Add User và ẩn danh sách Users
+      document.getElementById('addUserForm').style.display = 'block';
+      document.getElementById('userList').style.display = 'none';
+      document.getElementById('users').style.display = 'none'; // Ẩn danh sách Users khi mở form
+      document.getElementById('addUserButton').style.display = 'none'; // Ẩn nút Add User
+    });
+
+    // Lắng nghe sự kiện nhấn nút "Save User"
+    document.getElementById('saveUserButton').addEventListener('click', function () {
+      const name = document.getElementById('name').value;
+      const age = document.getElementById('age').value;
+      const address = document.getElementById('address').value;
+
+      if (name && age && address) {
+        // Tạo một phần tử li mới và thêm thông tin vào User List
+        const userItem = document.createElement('li');
+        userItem.textContent = `Name: ${name}, Age: ${age}, Address: ${address}`;
+        document.getElementById('users').appendChild(userItem);
+
+        // Reset form
+        document.getElementById('name').value = '';
+        document.getElementById('age').value = '';
+        document.getElementById('address').value = '';
+
+        // Hiển thị lại danh sách Users và ẩn form
+        document.getElementById('users').style.display = 'block'; // Hiện lại danh sách Users
+        document.getElementById('addUserForm').style.display = 'none'; // Ẩn form Add User
+        document.getElementById('addUserButton').style.display = 'block'; // Hiện lại nút Add User
+      } else {
+        alert("Please fill in all fields.");
+      }
+    });
+  </script>
+
+
+  <!-- Đoạn mã JavaScript -->
+  <script>
+    const contractAddress = "0xC3Ba5050Ec45990f76474163c5bA673c244aaECA"; // Thay bằng địa chỉ hợp đồng của bạn
+    const contractABI = [
+      {
+        "inputs": [
+          { "internalType": "string", "name": "name", "type": "string" },
+          { "internalType": "uint8", "name": "age", "type": "uint8" },
+          { "internalType": "string", "name": "addr", "type": "string" }
+        ],
+        "name": "addUser",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      // Các hàm còn lại
+    ];
+    let web3;
+    let userManagerContract;
+
+    // Khởi tạo Web3 và kiểm tra MetaMask
+    if (typeof window.ethereum !== 'undefined') {
+      web3 = new Web3(window.ethereum);
+    } else {
+      alert('Please install MetaMask!');
+    }
+
+    // Lấy các phần tử HTML
+    const connectWalletButton = document.getElementById('connectWalletButton');
+    const walletAddress = document.getElementById('walletAddress');
+    const addUserButton = document.getElementById('addUserButton');
+    const userList = document.getElementById('userList');
+    const userListContainer = document.getElementById('userListContainer');
+    const nameInput = document.getElementById('name');
+    const ageInput = document.getElementById('age');
+    const addressInput = document.getElementById('address');
+    const saveUserButton = document.getElementById('saveUserButton');
+    const addUserForm = document.getElementById('addUserForm');
+
+    let editingUserIndex = null; // Giữ vị trí của người dùng đang chỉnh sửa
+
+    // Kết nối ví MetaMask
+    connectWalletButton.addEventListener('click', async () => {
+      try {
+        const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+        walletAddress.innerText = `Connected: ${accounts[0]}`;
+
+        userManagerContract = new web3.eth.Contract(contractABI, contractAddress);
+
+        // Hiển thị nút Add User, User List và các trường nhập liệu khi kết nối thành công
+        addUserButton.style.display = 'inline-block';
+        userList.style.display = 'block';
+        connectWalletButton.style.display = 'none'; // Ẩn nút Connect Wallet
+      } catch (error) {
+        console.error(error);
+        alert('Failed to connect MetaMask');
+      }
+    });
+
+    // Hiển thị form Add User khi nhấn nút Add User
+    addUserButton.addEventListener('click', () => {
+      addUserForm.style.display = 'block';
+      addUserButton.style.display = 'none'; // Ẩn nút Add User khi form hiển thị
+    });
+
+    // Hàm thêm người dùng vào blockchain
+    async function addUser(name, age, addressUser) {
+      const accounts = await web3.eth.getAccounts();
+      await userManagerContract.methods.addUser(name, age, addressUser).send({ from: accounts[0] });
+    }
+
+    // Hàm lấy danh sách người dùng từ blockchain
+    async function getUsers() {
+      return await userManagerContract.methods.show().call();
+    }
+
+    // Hiển thị danh sách người dùng
+    async function renderUsers() {
+      const users = await getUsers();
+      userListContainer.innerHTML = '';
+      users.forEach((user, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${user.userName}</td>
+          <td>${user.age}</td>
+          <td>${user.addressUser}</td>
+          <td class="action-buttons">
+            <button class="edit-button" onclick="editUser(${index})">Edit</button>
+            <button class="delete-button" onclick="deleteUser(${index})">Delete</button>
+          </td>
+        `;
+        userListContainer.appendChild(row);
+      });
+    }
+
+    // Chỉnh sửa người dùng
+    async function editUser(index) {
+      const users = await getUsers();
+      const userToEdit = users[index];
+
+      // Điền thông tin vào các trường nhập liệu
+      nameInput.value = userToEdit.userName;
+      ageInput.value = userToEdit.age;
+      addressInput.value = userToEdit.addressUser;
+
+      // Lưu lại chỉ số người dùng đang chỉnh sửa
+      editingUserIndex = index;
+    }
+
+    // Lưu người dùng mới hoặc cập nhật thông tin người dùng khi nhấn Save
+    saveUserButton.addEventListener('click', async () => {
+      const name = nameInput.value;
+      const age = parseInt(ageInput.value);
+      const addressUser = addressInput.value;
+
+      if (name && age && addressUser) {
+        if (editingUserIndex !== null) {
+          // Cập nhật người dùng
+          await updateUser(editingUserIndex, name, age, addressUser);
+          editingUserIndex = null; // Reset vị trí người dùng đang chỉnh sửa
+        } else {
+          // Thêm người dùng mới
+          await addUser(name, age, addressUser);
+        }
+        renderUsers(); // Cập nhật lại danh sách người dùng
+        clearForm(); // Xóa form sau khi lưu
+        addUserForm.style.display = 'none'; // Ẩn form Add User sau khi lưu
+        addUserButton.style.display = 'inline-block'; // Hiển thị lại nút Add User
+      } else {
+        alert("Please fill in all fields.");
+      }
+    });
+
+    // Hàm cập nhật người dùng
+    async function updateUser(index, name, age, addressUser) {
+      const users = await getUsers();
+      const userToUpdate = users[index];
+      const accounts = await web3.eth.getAccounts();
+      await userManagerContract.methods.updateUser(userToUpdate.id, name, age, addressUser).send({ from: accounts[0] });
+    }
+
+    // Hàm xóa người dùng
+    async function deleteUser(index) {
+      const users = await getUsers();
+      const userToDelete = users[index];
+      const accounts = await web3.eth.getAccounts();
+      await userManagerContract.methods.deleteUser(userToDelete.id).send({ from: accounts[0] });
+      renderUsers(); // Cập nhật lại danh sách người dùng
+    }
+
+    // Hàm làm sạch form sau khi lưu
+    function clearForm() {
+      nameInput.value = '';
+      ageInput.value = '';
+      addressInput.value = '';
+    }
+  </script>
+</body>
+
+</html>
